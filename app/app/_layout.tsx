@@ -19,13 +19,33 @@ export default function RootLayout() {
     const inAuthGroup = segments[0] === "(auth)";
     const inTabsGroup = segments[0] === "(tabs)";
     const inAdminGroup = segments[0] === "admin";
+    const atRoot = segments.length === 0;
 
-    if (!isAuthenticated && !inAuthGroup) {
-      // Redirect to login if not authenticated and not in auth group
-      router.replace("/");
-    } else if (isAuthenticated && !inTabsGroup && !inAdminGroup) {
-      // Redirect to tabs ONLY if authenticated and NOT in tabs OR admin
-      router.replace("/(tabs)");
+    const isLogout = segments[1] === "logout"; // Check if we are in logout route inside (auth)
+
+    console.log("RootLayout Check:", {
+      isAuthenticated,
+      segments,
+      inAuthGroup,
+      inTabsGroup,
+      atRoot,
+    });
+
+    if (!isAuthenticated) {
+      // Not authenticated
+      // Allow access to (auth) group and root (login)
+      if (!inAuthGroup && !atRoot) {
+        console.log("Redirecting to login (/)");
+        router.replace("/");
+      }
+    } else {
+      // Authenticated
+      // Redirect to tabs if trying to access public screens (root or auth)
+      // BUT allow (tabs), admin, AND logout
+      if (!inTabsGroup && !inAdminGroup && !isLogout) {
+        console.log("Redirecting to tabs (/(tabs))");
+        router.replace("/(tabs)");
+      }
     }
   }, [isAuthenticated, isLoading, segments]);
 

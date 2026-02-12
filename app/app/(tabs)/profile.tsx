@@ -95,8 +95,7 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = async () => {
-    await logout();
-    router.replace("/");
+    router.replace("/(auth)/logout");
   };
 
   const handleChangePassword = async () => {

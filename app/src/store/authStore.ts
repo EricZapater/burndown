@@ -44,15 +44,15 @@ export const useAuthStore = create<AuthState>((set) => ({
       // Remove stored credentials
       await SecureStore.deleteItemAsync(TOKEN_KEY);
       await SecureStore.deleteItemAsync(USER_KEY);
-
+    } catch (error) {
+      console.error("Failed to clear auth data:", error);
+    } finally {
       set({
         token: null,
         user: null,
         isAuthenticated: false,
         isLoading: false,
       });
-    } catch (error) {
-      console.error("Failed to clear auth data:", error);
     }
   },
 
