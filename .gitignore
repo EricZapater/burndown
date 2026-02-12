@@ -1,32 +1,87 @@
-# If you prefer the allow list template instead of the deny list, see community template:
-# https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
-#
-# Binaries for programs and plugins
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
+# ===================================
+# GLOBAL & OS (Mac, Linux, Windows)
+# ===================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+Desktop.ini
 
-# Test binary, built with `go test -c`
-*.test
+# Editors & IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
 
-# Code coverage profiles and other test artifacts
-*.out
-coverage.*
-*.coverprofile
-profile.cov
-
-# Dependency directories (remove the comment below to include it)
-# vendor/
-
-# Go workspace file
-go.work
-go.work.sum
-
-# env file
+# ===================================
+# SECRETS & ENV (CRÍTICS)
+# ===================================
+# Mai pugis fitxers .env reals
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+# Excepció: si crees un exemple segur
+! .env.example
 
-# Editor/IDE
-# .idea/
-# .vscode/
+# ===================================
+# DATABASE (SQLite)
+# ===================================
+# No volem la teva DB local al repo
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# ===================================
+# BACKEND (Go - /api)
+# ===================================
+# Binaris compilats
+/api/bin/
+/api/dist/
+/api/main
+/api/server
+/api/*.exe
+/api/*.test
+
+# Dependències (si fas servir Go Modules, no cal vendor)
+/api/vendor/
+
+# Test coverage
+/api/coverage.txt
+/api/profile.out
+
+# ===================================
+# FRONTEND (Expo - /app)
+# ===================================
+# Dependències de Node
+/app/node_modules/
+
+# Build outputs d'Expo
+/app/.expo/
+/app/dist/
+/app/web-build/
+
+# Metro Bundler cache
+/app/.metro-health
+/app/.metro/
+
+# Logs d'errors de npm/yarn
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- EXPO / REACT NATIVE NATIVE FOLDERS ---
+# NOTA D'ARQUITECTURA:
+# Com que fas servir Expo amb agents d'IA, el més probable és que facis servir 
+# "Continuous Native Generation" (Prebuild). Això vol dir que les carpetes 
+# 'android' i 'ios' són artefactes generats i no s'han de versionar.
+# Si mai fas "eject" o toques codi natiu manualment, comenta aquestes línies.
+/app/android/
+/app/ios/
+
+# TypeScript
+*.tsbuildinfo
