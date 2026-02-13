@@ -6,31 +6,43 @@
     "orientation": "portrait",
     "scheme": "burndown",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#121212"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.eric.zapater.burndown"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#121212"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
-      "package": "com.eric.zapater.burndown"
+      "package": "com.eric.zapater.burndown",
+      "permissions": ["CAMERA"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-secure-store",
-      "expo-router"
-    ]
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Necessitem la càmera per escanejar els teus àpats."
+        }
+      ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "72dd26a6-b892-4c3a-82d5-41b82da96626"
+      }
+    }
   }
 }

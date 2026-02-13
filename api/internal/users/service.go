@@ -1,6 +1,7 @@
 package users
 
 import (
+	"api/internal/mailer"
 	"context"
 	"time"
 
@@ -25,10 +26,11 @@ type Service interface {
 
 type service struct {
 	repository Repository
+	mailer mailer.Service
 }
 
-func NewService(repository Repository) Service {
-	return &service{repository: repository}
+func NewService(repository Repository, mailer mailer.Service) Service {
+	return &service{repository: repository, mailer:mailer}
 }
 
 func (s *service) Create(ctx context.Context, request *CreateUserRequest) error {
@@ -43,7 +45,11 @@ func (s *service) Create(ctx context.Context, request *CreateUserRequest) error 
 		Password: password,
 		Active:   true,
 	}
-	return s.repository.Create(ctx, user)
+	err = s.repository.Create(ctx, user)
+	if err != nil {
+		return err
+	}
+	return s.mailer.SendWelcomeEmail(user.Email, user.Name)
 }
 
 func (s *service) GetAll(ctx context.Context) ([]User, error) {

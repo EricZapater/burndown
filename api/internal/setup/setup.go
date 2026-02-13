@@ -6,6 +6,7 @@ import (
 	"api/internal/app"
 	"api/internal/auth"
 	"api/internal/database"
+	"api/internal/mailer"
 	"api/internal/meals"
 	"api/internal/middleware"
 	"api/internal/users"
@@ -44,8 +45,9 @@ func NewApp(cfg *config.Config) (*app.App, error) {
 	userRepo := users.NewRepository(db)
 	mealRepo := meals.NewRepository(db)
 
-	// 5. Inicialitzar services (injectar dependencies)
-	userService := users.NewService(userRepo)
+	// 5. Inicialitzar services (injectar dependencies)	
+	mailerService := mailer.NewService()
+	userService := users.NewService(userRepo, mailerService)
 	authService := auth.NewService(userService, jwtMiddleware)
 	mealService := meals.NewService(mealRepo)
 
