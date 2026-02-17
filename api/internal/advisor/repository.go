@@ -3,6 +3,7 @@ package advisor
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 
 	"github.com/google/uuid"
 )
@@ -29,15 +30,63 @@ func (r *repository) CreateAnalysisJob(ctx context.Context, job *AnalysisJob) er
 }
 
 func (r *repository) GetAnalysisJob(ctx context.Context, id uuid.UUID) (*AnalysisJob, error) {
-	sql := `SELECT id, status, image_path, description, request_meta, response, error_message, requested_at, responsed_at
+	sqlQuery := `SELECT id, status, image_path, description, request_meta, response, error_message, requested_at, responsed_at
 	FROM analysis_jobs
 	WHERE id = $1`
-	row := r.db.QueryRowContext(ctx, sql, id)
+	
+	row := r.db.QueryRowContext(ctx, sqlQuery, id)
+	
 	var job AnalysisJob
-	err := row.Scan(&job.ID, &job.Status, &job.ImagePath, &job.Description, &job.RequestMeta, &job.Response, &job.ErrorMessage, &job.RequestedAt, &job.ResponsedAt)
+	
+	// 1. Creem variables "escut" que saben absorbir els NULLs de SQL
+	var reqMetaBytes []byte
+	var respBytes []byte
+	var errMsg sql.NullString // Absorbeix text o NULL sense petar
+	var respAt sql.NullTime   // Absorbeix timestamps o NULL sense petar
+	
+	// 2. Fem l'Scan apuntant a les variables escut on calgui
+	err := row.Scan(
+		&job.ID, 
+		&job.Status, 
+		&job.ImagePath, 
+		&job.Description, 
+		&reqMetaBytes, 
+		&respBytes, 
+		&errMsg, 
+		&job.RequestedAt, 
+		&respAt,
+	)
 	if err != nil {
 		return nil, err
 	}
+	
+	// 3. Passem les dades de les variables escut al teu struct final
+	
+	
+	if reqMetaBytes != nil {
+		job.RequestMeta = json.RawMessage(reqMetaBytes)
+	} else {
+		job.RequestMeta = json.RawMessage("{}")
+	}
+	
+	if respBytes != nil {
+		job.Response = json.RawMessage(respBytes)
+	} else {
+		job.Response = json.RawMessage("{}")
+	}
+	
+	// --- Pointers ---
+	// Només creem el punter i li assignem valor si el camp NO era NULL
+	if errMsg.Valid {
+		// Copiem el valor a una variable nova per poder fer-ne el punter
+		msg := errMsg.String
+		job.ErrorMessage = &msg
+	}
+	
+	if respAt.Valid {
+		job.ResponsedAt = &respAt.Time
+	}
+	
 	return &job, nil
 }
 
