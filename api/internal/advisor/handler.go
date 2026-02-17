@@ -1,15 +1,15 @@
 package advisor
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type Handler struct {
@@ -67,20 +67,43 @@ func (h *Handler) Analyze(c *gin.Context) {
 	}
     
 	// Call service
-	retrials := 3
-	for i := 0; i < retrials; i++ {
-		result, err := h.service.AnalyzeImage(c.Request.Context(), fileBytes, ext, description)
-		if err == nil {
-			c.JSON(http.StatusOK, result)
-			return
-		}
-		log.Println(i, " Attempt failed", err)
-		time.Sleep(5 * time.Second)
+	jobID := uuid.New()
+	requestMeta := json.RawMessage(`{}`) // Start with empty meta, can add headers/IP later if needed
+
+	id, err := h.service.AnalyzeImage(c.Request.Context(), jobID, requestMeta, fileBytes, ext, description)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to submit analysis job: %v", err)})
+		return
 	}
-	c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Analysis failed: %v", err)})
-	return	
+
+	c.JSON(http.StatusAccepted, gin.H{
+		"job_id": id,
+		"status": "pending",
+	})
+}
+
+func (h *Handler) GetAnalysisJob(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid UUID format"})
+		return
+	}
+
+	job, err := h.service.GetAnalysisJob(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve job"})
+		return
+	}
+	if job == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Job not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, job)
 }
 
 func RegisterRoutes(r *gin.RouterGroup, h *Handler) {
 	r.POST("/advisor/analyze", h.Analyze)
+	r.GET("/advisor/jobs/:id", h.GetAnalysisJob)
 }

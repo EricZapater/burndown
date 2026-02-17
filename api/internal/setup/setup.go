@@ -35,21 +35,20 @@ func NewApp(cfg *config.Config) (*app.App, error) {
 		return nil, fmt.Errorf("failed to setup JWT middleware: %w", err)
 	}
 
-	// 3. Inicialitzar serveis externs (Gemini AI)
-	advisorService, err := advisor.NewService(cfg.LLMKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize advisor service: %w", err)
-	}
-
 	// 4. Inicialitzar repositories
 	userRepo := users.NewRepository(db)
 	mealRepo := meals.NewRepository(db)
+	advisorRepo := advisor.NewRepository(db)
 
 	// 5. Inicialitzar services (injectar dependencies)	
 	mailerService := mailer.NewService()
 	userService := users.NewService(userRepo, mailerService)
 	authService := auth.NewService(userService, jwtMiddleware)
 	mealService := meals.NewService(mealRepo)
+	advisorService, err := advisor.NewService(cfg.LLMKey, advisorRepo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize advisor service: %w", err)
+	}
 
 	// 6. Inicialitzar handlers
 	userHandler := users.NewHandler(userService)
