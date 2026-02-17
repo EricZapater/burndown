@@ -102,6 +102,10 @@ export const userApi = {
     });
   },
 
+  getAnalysisJob: async (jobId: string) => {
+    return api.get(`/advisor/jobs/${jobId}`);
+  },
+
   getMeals: async (userId: string, date: string) => {
     // Matches the new route: users.GET("/:id/meals/date/:date", handler.FindAllByUserIdAndDate)
     return api.get(`/users/${userId}/meals/date/${date}`);

@@ -14,7 +14,7 @@ type AnalysisJob struct {
 	Description string    `json:"description"`
 	RequestMeta json.RawMessage `json:"request_meta"`
 	Response json.RawMessage `json:"response"`
-	ErrorMessage          string          `json:"error_message"`
+	ErrorMessage          *string         `json:"error_message"`
 	RequestedAt  time.Time       `json:"requested_at"`
     ResponsedAt  *time.Time      `json:"responsed_at"`
 }

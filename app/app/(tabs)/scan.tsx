@@ -24,6 +24,28 @@ export default function ScanScreen() {
   const cameraRef = useRef<CameraView>(null);
   const router = useRouter();
   const addMeal = useMealsStore((state) => state.addMeal);
+  const [loadingMessage, setLoadingMessage] = useState(
+    "Analyzing your meal...",
+  );
+
+  // Funny Loading Messages
+  const FUNNY_MESSAGES = [
+    "La IA s'està posant el pitet... 🤤",
+    "Comptant els pèsols un per un... 🔍",
+    "Buscant la proteïna amagada... 🥩",
+    "Negociant amb les calories perquè baixin... 📉",
+    "Això va directe als bíceps, oi? 💪",
+    "Calculant el nivell de penediment post-àpat... 😅",
+    "La IA s'està menjant la foto amb els ulls... 👀",
+    "Mesurant els macros amb regle i cartabó... 📐",
+    "Tranquil, si t'ho menges ràpid la IA no ho veu... 🏃‍♂️",
+    "Processant... si us plau, no et mengis el mòbil. 📱",
+    "Subornant la bàscula virtual... 💸",
+    "Això dona per a 3 sèries de sentadilles extres... 🏋️‍♂️",
+    "Preguntant-li a un nutricionista italià... 🤌",
+    "Separant els greixos bons dels 'regulín'... 🥑",
+    "Decidint si això és un 'cheat meal' o un 'cheat day'... 🍕",
+  ];
 
   // State Machine
   const [mode, setMode] = useState<"camera" | "preview" | "loading" | "review">(
@@ -79,30 +101,76 @@ export default function ScanScreen() {
     }
   };
 
+  const getRandomMessage = () => {
+    return FUNNY_MESSAGES[Math.floor(Math.random() * FUNNY_MESSAGES.length)];
+  };
+
   const analyzeImage = async () => {
     if (!imageUri) return;
 
     setMode("loading");
+    setLoadingMessage(getRandomMessage());
+
     try {
+      // 1. Submit Job
       const response = await userApi.analyzeImage(imageUri, description);
-      const data = response.data;
 
-      // Populate review state
-      setMealName(data.name || "Unknown Meal");
-      setCalories(data.calories?.toString() || "0");
-      setProtein(data.protein_g?.toString() || "0");
-      setCarbs(data.carbs_g?.toString() || "0");
-      setFat(data.fat_g?.toString() || "0");
-      setConfidence(data.confidence_level || "low");
+      // Check if we got 202 Accepted with job_id
+      const jobId = response.data.job_id;
+      if (!jobId) {
+        throw new Error("No Job ID returned from analysis request.");
+      }
 
-      setMode("review");
+      // 2. Poll for results
+      const pollInterval = setInterval(async () => {
+        try {
+          // Update message occasionally
+          setLoadingMessage(getRandomMessage());
+
+          const jobResponse = await userApi.getAnalysisJob(jobId);
+          const jobData = jobResponse.data;
+
+          if (jobData.status === "completed") {
+            clearInterval(pollInterval);
+            const result = jobData.response;
+
+            if (!result) {
+              Alert.alert("Error", "Analysis completed but no result found.");
+              setMode("preview");
+              return;
+            }
+
+            // Populate review state
+            setMealName(result.name || "Unknown Meal");
+            setCalories(result.calories?.toString() || "0");
+            setProtein(result.protein_g?.toString() || "0");
+            setCarbs(result.carbs_g?.toString() || "0");
+            setFat(result.fat_g?.toString() || "0");
+            setConfidence(result.confidence_level || "low");
+
+            setMode("review");
+          } else if (jobData.status === "failed") {
+            clearInterval(pollInterval);
+            Alert.alert("Error", jobData.error_message || "Analysis failed.");
+            setMode("preview");
+          }
+          // If 'pending', continue polling
+        } catch (pollError) {
+          console.error("Polling error:", pollError);
+          // Don't verify too aggressively, allow retries?
+          // For now, let's stop on error to avoid infinite loops if network is down
+          clearInterval(pollInterval);
+          Alert.alert("Error", "Failed to check analysis status.");
+          setMode("preview");
+        }
+      }, 3000); // Poll every 3 seconds
     } catch (error: any) {
       console.error("Analysis failed:", error);
-      let msg = "Failed to analyze image.";
+      let msg = "Failed to submit analysis.";
       if (error.response?.status === 413) msg = "Image is too large.";
       if (error.response?.data?.error) msg = error.response.data.error;
       Alert.alert("Error", msg);
-      setMode("preview"); // Go back to preview to try again
+      setMode("preview");
     }
   };
 
@@ -221,8 +289,10 @@ export default function ScanScreen() {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#34C759" />
-        <Text style={styles.loadingText}>Analyzing your meal with AI...</Text>
-        <Text style={styles.loadingSubText}>This might take a few seconds</Text>
+        <Text style={styles.loadingText}>{loadingMessage}</Text>
+        <Text style={styles.loadingSubText}>
+          This might take a few seconds...
+        </Text>
       </View>
     );
   }

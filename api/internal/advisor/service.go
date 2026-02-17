@@ -113,7 +113,8 @@ func (s *Service) AnalyzeImage(ctx context.Context, jobID uuid.UUID, requestMeta
 		resp, err := s.model.GenerateContent(aiCtx, prompt, imgPart)
 		if err != nil {
 			job.Status = "failed"
-			job.ErrorMessage = err.Error()
+			msg := err.Error()
+			job.ErrorMessage = &msg
 			now := time.Now()
 			job.ResponsedAt = &now
 			_ = s.repo.UpdateAnalysisJob(asyncCtx, job)
@@ -122,7 +123,8 @@ func (s *Service) AnalyzeImage(ctx context.Context, jobID uuid.UUID, requestMeta
 
 		if len(resp.Candidates) == 0 || len(resp.Candidates[0].Content.Parts) == 0 {
 			job.Status = "failed"
-			job.ErrorMessage = "empty response from gemini"
+			msg := "empty response from gemini"
+			job.ErrorMessage = &msg
 			now := time.Now()
 			job.ResponsedAt = &now
 			_ = s.repo.UpdateAnalysisJob(asyncCtx, job)
@@ -133,7 +135,8 @@ func (s *Service) AnalyzeImage(ctx context.Context, jobID uuid.UUID, requestMeta
 		jsonText, ok := resp.Candidates[0].Content.Parts[0].(genai.Text)
 		if !ok {
 			job.Status = "failed"
-			job.ErrorMessage = "unexpected response format"
+			msg := "unexpected response format"
+			job.ErrorMessage = &msg
 			now := time.Now()
 			job.ResponsedAt = &now
 			_ = s.repo.UpdateAnalysisJob(asyncCtx, job)
@@ -144,7 +147,8 @@ func (s *Service) AnalyzeImage(ctx context.Context, jobID uuid.UUID, requestMeta
 		var result AnalysisResult
 		if err := json.Unmarshal([]byte(jsonText), &result); err != nil {
 			job.Status = "failed"
-			job.ErrorMessage = fmt.Sprintf("failed to parse json: %v", err)
+			msg := fmt.Sprintf("failed to parse json: %v", err)
+			job.ErrorMessage = &msg
 			now := time.Now()
 			job.ResponsedAt = &now
 			_ = s.repo.UpdateAnalysisJob(asyncCtx, job)
