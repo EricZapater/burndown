@@ -62,6 +62,7 @@ export default function ScanScreen() {
   const [carbs, setCarbs] = useState("");
   const [fat, setFat] = useState("");
   const [confidence, setConfidence] = useState("");
+  const [analysisImagePath, setAnalysisImagePath] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   if (!permission) {
@@ -147,6 +148,7 @@ export default function ScanScreen() {
             setCarbs(result.carbs_g?.toString() || "0");
             setFat(result.fat_g?.toString() || "0");
             setConfidence(result.confidence_level || "low");
+            setAnalysisImagePath(jobData.image_path || "");
 
             setMode("review");
           } else if (jobData.status === "failed") {
@@ -191,7 +193,7 @@ export default function ScanScreen() {
       await addMeal({
         name: mealName,
         description: description,
-        image_path: "--", // User requested this specific string
+        image_path: analysisImagePath || "--",
         calories: parseInt(calories) || 0,
         protein_g: parseFloat(protein) || 0,
         carbs_g: parseFloat(carbs) || 0,
@@ -218,6 +220,7 @@ export default function ScanScreen() {
     setProtein("");
     setCarbs("");
     setFat("");
+    setAnalysisImagePath("");
     setMode("camera");
   };
 

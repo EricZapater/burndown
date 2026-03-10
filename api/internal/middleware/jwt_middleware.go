@@ -13,8 +13,8 @@ func SetupJWT(cfg *config.Config) (*jwt.GinJWTMiddleware, error) {
     return jwt.New(&jwt.GinJWTMiddleware{
         Realm:       "api",
         Key:         []byte(cfg.JWTKey),
-        Timeout:     time.Hour * 8,
-        MaxRefresh:  time.Hour * 24,
+        Timeout:     time.Hour * 24 * 30, // 30 days
+        MaxRefresh:  time.Hour * 24 * 30, // 30 days
         IdentityKey: "id",
         PayloadFunc: func(data interface{}) jwt.MapClaims {
             if v, ok := data.(string); ok {

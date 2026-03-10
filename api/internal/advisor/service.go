@@ -32,15 +32,22 @@ type Service struct {
 
 const instructions = `
 		ROLE: Expert Sports Nutritionist.
-        TASK: Analyze food images for macronutrients.
+        TASK: Analyze food based on TWO inputs of equal importance: an IMAGE and an optional text DESCRIPTION provided by the user.
+        
+        COHERENCE CHECK (CRITICAL):
+        - If both image and description are provided, cross-reference them.
+        - If they match, base your analysis on both.
+        - If they contradict each other (e.g. image shows pasta but description says chicken), clearly state the discrepancy in the 'reasoning' field and base your nutritional estimates primarily on what you SEE in the image, but acknowledge the description.
+        - If no description is provided, analyze only the image.
         
         OUTPUT FORMAT: JSON only.
-        fields: name (in Catalan), calories, protein_g, carbs_g, fat_g, confidence_level.
+        fields: name (in Catalan), calories, protein_g, carbs_g, fat_g, confidence_level, reasoning.
         
         RULES:
         1. Account for hidden oils/sauces.
         2. If unsure, slightly overestimate calories.
         3. Identify the food in the 'name' field clearly.
+        4. In 'reasoning', always explain your analysis and whether image and description are coherent.
     `
 
 func NewService(apiKey string, repo Repository) (*Service, error) {
@@ -104,7 +111,13 @@ func (s *Service) AnalyzeImage(ctx context.Context, jobID uuid.UUID, requestMeta
 		asyncCtx := context.Background() 
 		
 		// 2.1 Prepare Prompt
-		prompt := genai.Text(fmt.Sprintf("Ets un nutricionista expert. Analitza aquesta imatge i estima els macronutrients amb precisió. Sigues realista amb les racions. L'usuari ha dit del plat: %s", mealDescription))
+		var promptText string
+		if mealDescription != "" {
+			promptText = fmt.Sprintf("Ets un nutricionista expert. Se t'envien DUES fonts d'informació amb el MATEIX pes:\n\n1. IMATGE: La foto del plat (adjunta).\n2. DESCRIPCIÓ DE L'USUARI: \"%s\"\n\nAnalitza els macronutrients amb precisió. Comprova si la imatge i la descripció són coherents. Si hi ha discrepàncies, indica-les al camp 'reasoning' i basa't principalment en el que veus a la imatge.", mealDescription)
+		} else {
+			promptText = "Ets un nutricionista expert. Analitza la imatge del plat i estima els macronutrients amb precisió. Sigues realista amb les racions. No s'ha proporcionat cap descripció addicional."
+		}
+		prompt := genai.Text(promptText)
 		imgPart := genai.ImageData(imgFormat, imgData)
 
 		aiCtx, cancel := context.WithTimeout(asyncCtx, 120*time.Second) // Increased timeout for safety
